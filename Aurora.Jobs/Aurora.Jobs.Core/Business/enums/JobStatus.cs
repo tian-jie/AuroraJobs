@@ -5,6 +5,7 @@
         Idle = 0,
         Running = 1,
         Starting = 3,
-        Stopping = 5
+        Stopping = 5,
+        Error = 999
     }
 }

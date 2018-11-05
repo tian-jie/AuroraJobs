@@ -11,7 +11,7 @@ namespace Aurora.Jobs.Core.Business.Info
         /// <summary>
         /// JobID
         /// </summary>				
-        public System.Guid ScheduledTaskId { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
         /// Job类型
@@ -108,10 +108,15 @@ namespace Aurora.Jobs.Core.Business.Info
         /// </summary>				
         public string LastUpdatedByUserName { get; set; }
 
-        ///// <summary>
-        ///// 最后更新时间
-        ///// </summary>
+        /// <summary>
+        /// 最后更新时间
+        /// </summary>
         public DateTime LastUpdatedDateTime { get; set; }
+
+        /// <summary>
+        /// 最后执行结果
+        /// </summary>
+        public string LastExecutedResult { get; set; }
 
         /// <summary>
         /// 是否删除 0-未删除   1-已删除

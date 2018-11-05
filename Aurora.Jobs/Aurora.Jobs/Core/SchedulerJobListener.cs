@@ -26,8 +26,7 @@ namespace Aurora.Jobs.Core
         public Task JobWasExecuted(IJobExecutionContext context, JobExecutionException jobException, CancellationToken cancellationToken = default(CancellationToken))
         {
             _logger.Debug($"SchedulerJobListener.JobWasExecuted: {context.JobDetail.Key.Name}");
-            System.Guid taskId = System.Guid.Empty;
-            Guid.TryParse(context.JobDetail.Key.Name, out taskId);
+            var taskId = int.Parse(context.JobDetail.Key.Name);
             DateTime nextFireTimeUtc = TimeZoneInfo.ConvertTimeFromUtc(context.NextFireTimeUtc.Value.DateTime, TimeZoneInfo.Local);
             DateTime fireTimeUtc = TimeZoneInfo.ConvertTimeFromUtc(context.FireTimeUtc.UtcDateTime, TimeZoneInfo.Local);
 

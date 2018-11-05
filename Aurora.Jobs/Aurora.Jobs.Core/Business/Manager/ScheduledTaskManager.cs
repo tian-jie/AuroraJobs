@@ -13,53 +13,53 @@ namespace Aurora.Jobs.Core.Business.Manager
         /// <summary>
         /// Job新增
         /// </summary>
-        /// <param name="ScheduledTaskInfo">ScheduledTaskInfo实体</param>
+        /// <param name="task">ScheduledTaskInfo实体</param>
         /// <returns></returns>
-        public bool InsertScheduledTask(ScheduledTask ScheduledTaskInfo)
+        public bool InsertScheduledTask(ScheduledTask task)
         {
-            ScheduledTaskInfo.CreatedDateTime = DateTime.Now;
-            ScheduledTaskInfo.LastUpdatedDateTime = DateTime.Now;
-            return db.Insertable(ScheduledTaskInfo).ExecuteCommand() > 0;
+            task.CreatedDateTime = DateTime.Now;
+            task.LastUpdatedDateTime = DateTime.Now;
+            return db.Insertable(task).ExecuteCommand() > 0;
         }
 
         /// <summary>
         /// Job修改
         /// </summary>
-        /// <param name="ScheduledTaskInfo">ScheduledTaskInfo实体</param>
+        /// <param name="task">ScheduledTaskInfo实体</param>
         /// <returns></returns>
-        public bool UpdateScheduledTask(ScheduledTask ScheduledTaskInfo)
+        public bool UpdateScheduledTask(ScheduledTask task)
         {
-            System.Guid ScheduledTaskId = ScheduledTaskInfo.ScheduledTaskId;
+            var ScheduledTaskId = task.Id;
 
-            ScheduledTaskInfo.LastUpdatedDateTime = DateTime.Now;
-            db.Updateable(ScheduledTaskInfo).IgnoreColumns(it => new { it.LastRunTime, it.NextRunTime, it.RunCount, it.CreatedByUserId, it.CreatedByUserName, it.CreatedDateTime, it.IsDelete }).Where(it => it.ScheduledTaskId == ScheduledTaskId).ExecuteCommand();
+            task.LastUpdatedDateTime = DateTime.Now;
+            db.Updateable(task).IgnoreColumns(it => new { it.LastRunTime, it.NextRunTime, it.RunCount, it.CreatedByUserId, it.CreatedByUserName, it.CreatedDateTime, it.IsDelete }).Where(it => it.Id == ScheduledTaskId).ExecuteCommand();
             return true;
         }
 
         /// <summary>
         /// Job删除
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
+        /// <param name="taskId">Job ID</param>
         /// <returns></returns>
-        public bool DeleteScheduledTask(System.Guid ScheduledTaskId)
+        public bool DeleteScheduledTask(int taskId)
         {
             ScheduledTask ScheduledTaskInfo = new ScheduledTask();
 
-            ScheduledTaskInfo.ScheduledTaskId = ScheduledTaskId;
+            ScheduledTaskInfo.Id = taskId;
             ScheduledTaskInfo.IsDelete = 1;
             ScheduledTaskInfo.LastUpdatedDateTime = DateTime.Now;
-            db.Updateable(ScheduledTaskInfo).UpdateColumns(it => new { it.IsDelete, it.LastUpdatedDateTime }).Where(it => it.ScheduledTaskId == ScheduledTaskId).ExecuteCommand();
+            db.Updateable(ScheduledTaskInfo).UpdateColumns(it => new { it.IsDelete, it.LastUpdatedDateTime }).Where(it => it.Id == taskId).ExecuteCommand();
             return true;
         }
 
         /// <summary>
         /// Job详情
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
+        /// <param name="taskId">Job ID</param>
         /// <returns></returns>
-        public ScheduledTask GetScheduledTaskInfo(System.Guid ScheduledTaskId)
+        public ScheduledTask GetScheduledTaskInfo(int taskId)
         {
-            return db.Queryable<ScheduledTask>().Where(it => it.ScheduledTaskId == ScheduledTaskId).First();
+            return db.Queryable<ScheduledTask>().Where(it => it.Id == taskId).First();
         }
 
         /// <summary>
@@ -109,30 +109,30 @@ namespace Aurora.Jobs.Core.Business.Manager
         /// <summary>
         /// 更新Job状态
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
-        /// <param name="State">状态</param>
+        /// <param name="taskId">Job ID</param>
+        /// <param name="status">状态</param>
         /// <returns></returns>
-        public bool UpdateScheduledTaskState(System.Guid ScheduledTaskId, JobStatus State)
+        public bool UpdateScheduledTaskState(int taskId, JobStatus status)
         {
             ScheduledTask ScheduledTaskInfo = new ScheduledTask();
-            ScheduledTaskInfo.ScheduledTaskId = ScheduledTaskId;
-            ScheduledTaskInfo.Status = State;
-            db.Updateable(ScheduledTaskInfo).UpdateColumns(it => new { it.Status }).Where(it => it.ScheduledTaskId == ScheduledTaskId).ExecuteCommand();
+            ScheduledTaskInfo.Id = taskId;
+            ScheduledTaskInfo.Status = status;
+            db.Updateable(ScheduledTaskInfo).UpdateColumns(it => new { it.Status }).Where(it => it.Id == taskId).ExecuteCommand();
             return true;
         }
 
         /// <summary>
         /// 更新Job运行信息 
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
-        /// <param name="LastRunTime">最后运行时间</param>
-        /// <param name="NextRunTime">下次运行时间</param>
-        public void UpdateScheduledTaskStatus(System.Guid ScheduledTaskId, DateTime LastRunTime, DateTime NextRunTime)
+        /// <param name="taskId">Job ID</param>
+        /// <param name="lastRunTime">最后运行时间</param>
+        /// <param name="nextRunTime">下次运行时间</param>
+        public void UpdateScheduledTaskStatus(int taskId, DateTime lastRunTime, DateTime nextRunTime)
         {
             db.Updateable<ScheduledTask>()
                 .ReSetValue(it => it.RunCount == (it.RunCount + 1))
-                .UpdateColumns(it => new ScheduledTask() { LastRunTime = LastRunTime, NextRunTime = NextRunTime })
-                .Where(it => it.ScheduledTaskId == ScheduledTaskId)
+                .UpdateColumns(it => new ScheduledTask() { LastRunTime = lastRunTime, NextRunTime = nextRunTime })
+                .Where(it => it.Id == taskId)
                 .ExecuteCommand();
         }
         #endregion
@@ -143,11 +143,11 @@ namespace Aurora.Jobs.Core.Business.Manager
         /// <summary>
         /// Job日志详情
         /// </summary>
-        /// <param name="ScheduledTaskHistoryId">日志ID</param>
+        /// <param name="taskHistoryId">日志ID</param>
         /// <returns></returns>
-        public ScheduledTaskHistory GetScheduledTaskHistoryInfo(System.Guid ScheduledTaskHistoryId)
+        public ScheduledTaskHistory GetScheduledTaskHistoryInfo(int taskHistoryId)
         {
-            return db.Queryable<ScheduledTaskHistory>().Where(it => it.ScheduledTaskHistoryId == ScheduledTaskHistoryId).First();
+            return db.Queryable<ScheduledTaskHistory>().Where(it => it.Id == taskHistoryId).First();
         }
 
         /// <summary>
@@ -185,20 +185,20 @@ namespace Aurora.Jobs.Core.Business.Manager
         /// <summary>
         /// Job日志删除
         /// </summary>
-        /// <param name="ScheduledTaskHistoryId">日志ID</param>
+        /// <param name="taskHistoryId">日志ID</param>
         /// <returns></returns>
-        public bool DeleteScheduledTaskHistory(System.Guid ScheduledTaskHistoryId)
+        public bool DeleteScheduledTaskHistory(int taskHistoryId)
         {
-            return db.Deleteable<ScheduledTaskHistory>().Where(it => it.ScheduledTaskHistoryId == ScheduledTaskHistoryId).ExecuteCommand() > 0;
+            return db.Deleteable<ScheduledTaskHistory>().Where(it => it.Id == taskHistoryId).ExecuteCommand() > 0;
         }
 
         /// <summary>
         /// Job日志记录
         /// </summary>
-        /// <param name="job">ScheduledTaskHistoryModel</param>
-        public void AddScheduledTaskHistory(ScheduledTaskHistory job)
+        /// <param name="jobHistory">ScheduledTaskHistoryModel</param>
+        public void AddScheduledTaskHistory(ScheduledTaskHistory jobHistory)
         {
-            db.Insertable(job).ExecuteCommand();
+            db.Insertable(jobHistory).ExecuteCommand();
         }
         #endregion
     }

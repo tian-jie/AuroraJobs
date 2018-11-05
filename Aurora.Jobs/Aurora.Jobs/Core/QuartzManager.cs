@@ -29,18 +29,11 @@ namespace Aurora.Jobs.Core
         /// <returns></returns>
         private Type GetClassInfo(string assemblyName, string className)
         {
-            Type type = null;
-            try
-            {
-                assemblyName = GetAbsolutePath(assemblyName);
-                Assembly assembly = null;
-                assembly = Assembly.LoadFrom(assemblyName);
-                type = assembly.GetType(className, true, true);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            assemblyName = GetAbsolutePath(assemblyName);
+            Assembly assembly = null;
+            assembly = Assembly.LoadFrom(assemblyName);
+            var type = assembly.GetType(className, true, true);
+
             return type;
         }
 
@@ -85,39 +78,40 @@ namespace Aurora.Jobs.Core
         /// Job调度
         /// </summary>
         /// <param name="scheduler"></param>
-        /// <param name="jobInfo"></param>
-        public void ScheduleJob(IScheduler scheduler, ScheduledTask jobInfo)
+        /// <param name="task"></param>
+        public void ScheduleJob(IScheduler scheduler, ScheduledTask task)
         {
-            _logger.Debug($"entering  QuartzManager.ScheduleJob - {jobInfo.Name}, {jobInfo.NextRunTime}");
-            if (ValidExpression(jobInfo.CronExpression))
+            _logger.Debug($"entering  QuartzManager.ScheduleJob - {task.Name}, {task.NextRunTime}");
+            if (ValidExpression(task.CronExpression))
             {
-                Type type = GetClassInfo(jobInfo.AssemblyName, jobInfo.ClassName);
+                Type type = GetClassInfo(task.AssemblyName, task.ClassName);
                 if (type != null)
                 {
-                    IJobDetail job = new JobDetailImpl(jobInfo.ScheduledTaskId.ToString(), jobInfo.ScheduledTaskId.ToString() + "Group", type);
-                    job.JobDataMap.Add("Parameters", jobInfo.JobArgs);
-                    job.JobDataMap.Add("JobName", jobInfo.Name);
+                    IJobDetail job = new JobDetailImpl(task.Id.ToString(), task.Id.ToString() + "Group", type);
+                    job.JobDataMap.Add("Parameters", task.JobArgs);
+                    job.JobDataMap.Add("JobName", task.Name);
 
                     CronTriggerImpl trigger = new CronTriggerImpl();
-                    trigger.CronExpressionString = jobInfo.CronExpression;
-                    trigger.Name = jobInfo.ScheduledTaskId.ToString();
-                    trigger.Description = jobInfo.Description;
+                    trigger.CronExpressionString = task.CronExpression;
+                    trigger.Name = task.Id.ToString();
+                    trigger.Description = task.Description;
                     trigger.StartTimeUtc = DateTime.UtcNow;
-                    trigger.Group = jobInfo.ScheduledTaskId + "TriggerGroup";
+                    trigger.Group = task.Id + "TriggerGroup";
                     scheduler.ScheduleJob(job, trigger);
                 }
                 else
                 {
-                    new ScheduledTaskService().WriteBackgroundJoLog(jobInfo.ScheduledTaskId, jobInfo.Name, DateTime.Now, jobInfo.AssemblyName + jobInfo.ClassName + "无效，无法启动该任务");
+                    new ScheduledTaskService().AddScheduledTaskHistory(task.Id, task.Name, DateTime.Now, task.AssemblyName + task.ClassName + "无效，无法启动该任务");
                 }
             }
             else
             {
-                new ScheduledTaskService().WriteBackgroundJoLog(jobInfo.ScheduledTaskId, jobInfo.Name, DateTime.Now, jobInfo.CronExpression + "不是正确的Cron表达式,无法启动该任务");
+                new ScheduledTaskService().AddScheduledTaskHistory(task.Id, task.Name, DateTime.Now, task.CronExpression + "不是正确的Cron表达式,无法启动该任务");
             }
+
         }
 
-        
+
         /// <summary>
         /// Job状态管控
         /// </summary>
@@ -126,53 +120,66 @@ namespace Aurora.Jobs.Core
         {
             _logger.Debug($"entering  QuartzManager.JobScheduler");
 
-            var list = new ScheduledTaskService().GetAllowScheduleJobInfoList();
-            _logger.Debug($"({list.Count}) jobs found");
+            var jobList = new ScheduledTaskService().GetAllowScheduleJobInfoList();
+            _logger.Debug($"({jobList.Count}) jobs found");
 
-            if (list == null || list.Count == 0)
+            if (jobList == null || jobList.Count == 0)
             {
                 return;
             }
 
-            foreach (var jobInfo in list)
+            foreach (var job in jobList)
             {
-                var jobKey = new JobKey(jobInfo.ScheduledTaskId.ToString(), jobInfo.ScheduledTaskId.ToString() + "Group");
-                _logger.Debug($"prcessing job - {jobInfo.Name}, jobInfo.NextRunTime:{jobInfo.NextRunTime}, jobKey={jobKey}");
-
-                var existsJobKey = await scheduler.CheckExists(jobKey);
-                if (!(existsJobKey))
+                try
                 {
-                    _logger.Debug($"no jobKey, state={jobInfo.Status}");
+                    var jobKey = new JobKey(job.Id.ToString(), job.Id.ToString() + "Group");
+                    _logger.Debug($"prcessing job - {job.Name}, jobInfo.NextRunTime:{job.NextRunTime}, jobKey={jobKey}");
 
-                    if (jobInfo.Status == Business.enums.JobStatus.Idle || jobInfo.Status == Business.enums.JobStatus.Running || jobInfo.Status == Business.enums.JobStatus.Starting)
+                    var existsJobKey = await scheduler.CheckExists(jobKey);
+                    if (!(existsJobKey))
                     {
-                        ScheduleJob(scheduler, jobInfo);
-                        if (!existsJobKey)
+                        _logger.Debug($"no jobKey, state={job.Status}");
+
+                        if (job.Status == Business.enums.JobStatus.Idle || job.Status == Business.enums.JobStatus.Running || job.Status == Business.enums.JobStatus.Starting)
                         {
-                            new ScheduledTaskService().UpdateScheduledTaskState(jobInfo.ScheduledTaskId, Business.enums.JobStatus.Idle);
+                            ScheduleJob(scheduler, job);
+                            if (!existsJobKey)
+                            {
+                                _logger.Debug("if (!existsJobKey), set to JobStatus.Idle");
+                                new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Idle);
+                            }
+                            else
+                            {
+                                _logger.Debug("if (existsJobKey), set to JobStatus.Running");
+                                new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Running);
+                            }
                         }
-                        else
+                        else if (job.Status == Business.enums.JobStatus.Stopping)
                         {
-                            new ScheduledTaskService().UpdateScheduledTaskState(jobInfo.ScheduledTaskId, Business.enums.JobStatus.Running);
+                            _logger.Debug("if (job.Status == JobStatus.Stopping), set to JobStatus.Idle");
+                            new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Idle);
                         }
                     }
-                    else if (jobInfo.Status == Business.enums.JobStatus.Stopping)
+                    else
                     {
-                        new ScheduledTaskService().UpdateScheduledTaskState(jobInfo.ScheduledTaskId, Business.enums.JobStatus.Idle);
+                        _logger.Debug($"has jobKey");
+                        if (job.Status == Business.enums.JobStatus.Stopping)
+                        {
+                            await scheduler.DeleteJob(jobKey);
+                            _logger.Debug("has jobKey, if (job.Status == JobStatus.Stopping), set to JobStatus.Idle");
+                            new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Idle);
+                        }
+                        else if (job.Status == Business.enums.JobStatus.Starting)
+                        {
+                            _logger.Debug("has jobKey, if (job.Status == JobStatus.Starting), set to JobStatus.Running");
+                            new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Running);
+                        }
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger.Debug($"has jobKey");
-                    if (jobInfo.Status == Business.enums.JobStatus.Stopping)
-                    {
-                        await scheduler.DeleteJob(jobKey);
-                        new ScheduledTaskService().UpdateScheduledTaskState(jobInfo.ScheduledTaskId, Business.enums.JobStatus.Idle);
-                    }
-                    else if (jobInfo.Status == Business.enums.JobStatus.Starting)
-                    {
-                        new ScheduledTaskService().UpdateScheduledTaskState(jobInfo.ScheduledTaskId, Business.enums.JobStatus.Running);
-                    }
+                    _logger.Error("任务加载失败:" + job.Name, ex);
+                    new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Error);
                 }
             }
         }

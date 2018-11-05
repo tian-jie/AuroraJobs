@@ -11,12 +11,12 @@ namespace Aurora.Jobs.Core.Business.Info
         /// <summary>
         /// JobID
         /// </summary>				
-        public System.Guid ScheduledTaskHistoryId { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
         /// JobID
         /// </summary>
-        public System.Guid ScheduledTaskId { get; set; }
+        public int ScheduledTaskId { get; set; }
 
         /// <summary>
         /// Job名称
@@ -26,22 +26,22 @@ namespace Aurora.Jobs.Core.Business.Info
         /// <summary>
         /// 执行时间
         /// </summary>				
-        public Nullable<DateTime> ExecutionTime { get; set; }
+        public DateTime? ExecutedTime { get; set; }
 
         /// <summary>
         /// 执行持续时长
         /// </summary>				
-        public Nullable<double> ExecutionDuration { get; set; }
+        public double? ExecutionDuration { get; set; }
 
         /// <summary>
         /// 创建日期时间
         /// </summary>				
-        public System.DateTime CreatedDateTime { get; set; }
+        public DateTime CreatedDateTime { get; set; }
 
         /// <summary>
         /// 日志内容
         /// </summary>				
-        public string RunLog { get; set; }
+        public string ExecutedResult { get; set; }
 
     }
 }

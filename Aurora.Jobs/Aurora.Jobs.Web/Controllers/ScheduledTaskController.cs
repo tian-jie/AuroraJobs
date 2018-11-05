@@ -31,12 +31,11 @@ namespace Aurora.Jobs.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult AddPost(ScheduledTask Info)
+        public ActionResult AddPost(ScheduledTask info)
         {
             var result = new ResponseResult();
             ScheduledTaskService _scheduledTaskService = new ScheduledTaskService();
-            Info.ScheduledTaskId = System.Guid.NewGuid();
-            result.success = _scheduledTaskService.InsertScheduledTask(Info);
+            result.success = _scheduledTaskService.InsertScheduledTask(info);
             return Json(result);
         }
 
@@ -46,7 +45,7 @@ namespace Aurora.Jobs.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult InfoData(System.Guid jobId)
+        public ActionResult InfoData(int jobId)
         {
             var result = new ResponseResult();
             ScheduledTaskService _scheduledTaskService = new ScheduledTaskService();
@@ -56,11 +55,11 @@ namespace Aurora.Jobs.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult UpdatePost(ScheduledTask Info)
+        public ActionResult UpdatePost(ScheduledTask scheduledTask)
         {
             var result = new ResponseResult();
             ScheduledTaskService _scheduledTaskService = new ScheduledTaskService();
-            result.success = _scheduledTaskService.UpdateScheduledTask(Info);
+            result.success = _scheduledTaskService.UpdateScheduledTask(scheduledTask);
             return Json(result);
         }
 
@@ -70,17 +69,17 @@ namespace Aurora.Jobs.Web.Controllers
             var result = new ResponseResult();
             ScheduledTaskService _scheduledTaskService = new ScheduledTaskService();
             string rtMsg = string.Empty;
-            result.success = _scheduledTaskService.DeleteScheduledTask(Utils.StringToGuidList(idList), out rtMsg);
+            result.success = _scheduledTaskService.DeleteScheduledTask(Utils.StringToIntList(idList), out rtMsg);
             result.message = rtMsg;
             return Json(result);
         }
 
         [HttpPost]
-        public ActionResult UpdateState(System.Guid id, JobStatus state)
+        public ActionResult UpdateState(int jobId, JobStatus state)
         {
             var result = new ResponseResult();
             ScheduledTaskService _scheduledTaskService = new ScheduledTaskService();
-            result.success = _scheduledTaskService.UpdateScheduledTaskState(id, state);
+            result.success = _scheduledTaskService.UpdateScheduledTaskState(jobId, state);
             result.message = result.success == true ? "操作成功" : "操作失败";
             return Json(result);
         }

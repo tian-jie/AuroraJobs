@@ -135,7 +135,6 @@ namespace Aurora.Jobs
 
 
 
-
         public bool Start(HostControl hostControl)
         {
             _logger.Info(" Start");

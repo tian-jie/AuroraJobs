@@ -13,31 +13,31 @@ namespace Aurora.Jobs.Core.Services
         /// <summary>
         /// Job新增
         /// </summary>
-        /// <param name="ScheduledTaskInfo">ScheduledTaskInfo实体</param>
+        /// <param name="task">ScheduledTaskInfo实体</param>
         /// <returns></returns>
-        public bool InsertScheduledTask(ScheduledTask ScheduledTaskInfo)
+        public bool InsertScheduledTask(ScheduledTask task)
         {
-            return new ScheduledTaskManager().InsertScheduledTask(ScheduledTaskInfo);
+            return new ScheduledTaskManager().InsertScheduledTask(task);
         }
 
         /// <summary>
         /// Job修改
         /// </summary>
-        /// <param name="ScheduledTaskInfo">ScheduledTaskInfo实体</param>
+        /// <param name="task">ScheduledTaskInfo实体</param>
         /// <returns></returns>
-        public bool UpdateScheduledTask(ScheduledTask ScheduledTaskInfo)
+        public bool UpdateScheduledTask(ScheduledTask task)
         {
-            return new ScheduledTaskManager().UpdateScheduledTask(ScheduledTaskInfo);
+            return new ScheduledTaskManager().UpdateScheduledTask(task);
         }
 
         /// <summary>
         /// Job删除
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
+        /// <param name="taskId">Job ID</param>
         /// <returns></returns>
-        public bool DeleteScheduledTask(System.Guid ScheduledTaskId)
+        public bool DeleteScheduledTask(int taskId)
         {
-            return new ScheduledTaskManager().DeleteScheduledTask(ScheduledTaskId);
+            return new ScheduledTaskManager().DeleteScheduledTask(taskId);
         }
 
         /// <summary>
@@ -45,16 +45,21 @@ namespace Aurora.Jobs.Core.Services
         /// </summary>
         /// <param name="idList">ID集合</param>
         /// <returns></returns>
-        public bool DeleteScheduledTask(List<System.Guid> idList, out string rtMsg)
+        public bool DeleteScheduledTask(List<int> idList, out string rtMsg)
         {
+            if (idList == null)
+            {
+                throw new ArgumentNullException(nameof(idList));
+            }
+
             bool result = false;
             rtMsg = string.Empty;
             int i = 0;
             if (idList != null && idList.Count > 0)
             {
-                foreach (System.Guid ScheduledTaskId in idList)
+                foreach (var scheduledTaskId in idList)
                 {
-                    ScheduledTask ScheduledTaskInfo = GetScheduledTaskInfo(ScheduledTaskId);
+                    ScheduledTask ScheduledTaskInfo = GetScheduledTaskInfo(scheduledTaskId);
                     if (ScheduledTaskInfo.Status != JobStatus.Idle)
                     {
                         rtMsg = string.Format("{0}状态不为 停止状态,无法进行删除！", ScheduledTaskInfo.Name);
@@ -62,9 +67,9 @@ namespace Aurora.Jobs.Core.Services
                     }
                 }
 
-                foreach (System.Guid ScheduledTaskId in idList)
+                foreach (var scheduledTaskId in idList)
                 {
-                    DeleteScheduledTask(ScheduledTaskId);
+                    DeleteScheduledTask(scheduledTaskId);
                     i++;
                 }
             }
@@ -75,11 +80,11 @@ namespace Aurora.Jobs.Core.Services
         /// <summary>
         /// Job详情
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
+        /// <param name="taskId">Job ID</param>
         /// <returns></returns>
-        public ScheduledTask GetScheduledTaskInfo(System.Guid ScheduledTaskId)
+        public ScheduledTask GetScheduledTaskInfo(int taskId)
         {
-            return new ScheduledTaskManager().GetScheduledTaskInfo(ScheduledTaskId);
+            return new ScheduledTaskManager().GetScheduledTaskInfo(taskId);
         }
 
         /// <summary>
@@ -104,49 +109,49 @@ namespace Aurora.Jobs.Core.Services
         /// <summary>
         /// 更新Job状态
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
-        /// <param name="State">状态</param>
+        /// <param name="taskId">Job ID</param>
+        /// <param name="status">状态</param>
         /// <returns></returns>
-        public bool UpdateScheduledTaskState(System.Guid ScheduledTaskId, JobStatus State)
+        public bool UpdateScheduledTaskState(int taskId, JobStatus status)
         {
-            return new ScheduledTaskManager().UpdateScheduledTaskState(ScheduledTaskId, State);
+            return new ScheduledTaskManager().UpdateScheduledTaskState(taskId, status);
         }
 
         /// <summary>
         /// 更新Job运行信息 
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
-        /// <param name="LastRunTime">最后运行时间</param>
-        /// <param name="NextRunTime">下次运行时间</param>
-        public void UpdateScheduledTaskStatus(System.Guid ScheduledTaskId, DateTime LastRunTime, DateTime NextRunTime)
+        /// <param name="taskId">Job ID</param>
+        /// <param name="lastRunTime">最后运行时间</param>
+        /// <param name="nextRunTime">下次运行时间</param>
+        public void UpdateScheduledTaskStatus(int taskId, DateTime lastRunTime, DateTime nextRunTime)
         {
-            new ScheduledTaskManager().UpdateScheduledTaskStatus(ScheduledTaskId, LastRunTime, NextRunTime);
+            new ScheduledTaskManager().UpdateScheduledTaskStatus(taskId, lastRunTime, nextRunTime);
         }
 
         /// <summary>
         /// 更新Job运行信息 
         /// </summary>
-        /// <param name="ScheduledTaskId">Job ID</param>
-        /// <param name="JobName">Job名称</param>
-        /// <param name="LastRunTime">最后运行时间</param>
-        /// <param name="NextRunTime">下次运行时间</param>
-        /// <param name="ExecutionDuration">运行时长</param>
-        /// <param name="RunLog">日志</param>
-        public void UpdateScheduledTaskStatus(System.Guid ScheduledTaskId, string JobName, DateTime LastRunTime, DateTime NextRunTime, double ExecutionDuration, string RunLog)
+        /// <param name="taskId">Job ID</param>
+        /// <param name="jobName">Job名称</param>
+        /// <param name="lastRunTime">最后运行时间</param>
+        /// <param name="nextRunTime">下次运行时间</param>
+        /// <param name="duration">运行时长</param>
+        /// <param name="executedResult">日志</param>
+        public void UpdateScheduledTaskStatus(int taskId, string jobName, DateTime lastRunTime, DateTime nextRunTime, double duration, string executedResult)
         {
-            UpdateScheduledTaskStatus(ScheduledTaskId, LastRunTime, NextRunTime);
-            AddScheduledTaskHistory(ScheduledTaskId, JobName, LastRunTime, ExecutionDuration, RunLog);
+            UpdateScheduledTaskStatus(taskId, lastRunTime, nextRunTime);
+            AddScheduledTaskHistory(taskId, jobName, lastRunTime, duration, executedResult);
         }
 
 
         /// <summary>
         /// Job日志详情
         /// </summary>
-        /// <param name="ScheduledTaskHistoryId">日志ID</param>
+        /// <param name="taskHistoryId">日志ID</param>
         /// <returns></returns>
-        public ScheduledTaskHistory GetScheduledTaskHistoryInfo(System.Guid ScheduledTaskHistoryId)
+        public ScheduledTaskHistory GetScheduledTaskHistoryInfo(int taskHistoryId)
         {
-            return new ScheduledTaskManager().GetScheduledTaskHistoryInfo(ScheduledTaskHistoryId);
+            return new ScheduledTaskManager().GetScheduledTaskHistoryInfo(taskHistoryId);
         }
 
         /// <summary>
@@ -164,9 +169,9 @@ namespace Aurora.Jobs.Core.Services
         /// </summary>
         /// <param name="ScheduledTaskHistoryId">日志ID</param>
         /// <returns></returns>
-        public bool DeleteScheduledTaskHistory(System.Guid ScheduledTaskHistoryId)
+        public bool DeleteScheduledTaskHistory(int taskHistoryId)
         {
-            return new ScheduledTaskManager().DeleteScheduledTaskHistory(ScheduledTaskHistoryId);
+            return new ScheduledTaskManager().DeleteScheduledTaskHistory(taskHistoryId);
         }
 
         /// <summary>
@@ -174,15 +179,15 @@ namespace Aurora.Jobs.Core.Services
         /// </summary>
         /// <param name="ScheduledTaskHistoryIdList">日志ID集合</param>
         /// <returns></returns>
-        public bool DeleteScheduledTaskHistory(List<System.Guid> ScheduledTaskHistoryIdList)
+        public bool DeleteScheduledTaskHistory(List<int> taskHistoryIdList)
         {
             bool result = false;
-            if (ScheduledTaskHistoryIdList != null && ScheduledTaskHistoryIdList.Count > 0)
+            if (taskHistoryIdList != null && taskHistoryIdList.Count > 0)
             {
                 int i = 0;
-                foreach (System.Guid ScheduledTaskHistoryId in ScheduledTaskHistoryIdList)
+                foreach (var ScheduledTaskHistoryId in taskHistoryIdList)
                 {
-                    if (DeleteScheduledTaskHistory(ScheduledTaskHistoryId))
+                    if (DeleteScheduledTaskHistory(taskHistoryIdList))
                         i++;
                 }
                 result = i > 0;
@@ -198,7 +203,7 @@ namespace Aurora.Jobs.Core.Services
         /// <param name="jobName">Job名称</param>
         /// <param name="executedTime">开始执行时间</param>
         /// <param name="executedResult">日志内容</param>
-        public void WriteBackgroundJoLog(Guid jobId, string jobName, DateTime executedTime, string executedResult)
+        public void AddScheduledTaskHistory(int jobId, string jobName, DateTime executedTime, string executedResult)
         {
             AddScheduledTaskHistory(jobId, jobName, executedTime, 0, executedResult);
         }
@@ -211,16 +216,15 @@ namespace Aurora.Jobs.Core.Services
         /// <param name="executedTime">开始执行时间</param>
         /// <param name="duration">执行时长</param>
         /// <param name="executedResult">日志内容</param>
-        public void AddScheduledTaskHistory(Guid jobId, string jobName, DateTime executedTime, double duration, string executedResult)
+        public void AddScheduledTaskHistory(int jobId, string jobName, DateTime executedTime, double duration, string executedResult)
         {
             ScheduledTaskHistory ScheduledTaskHistoryInfo = new ScheduledTaskHistory();
-            ScheduledTaskHistoryInfo.ScheduledTaskHistoryId = System.Guid.NewGuid();
             ScheduledTaskHistoryInfo.ScheduledTaskId = jobId;
             ScheduledTaskHistoryInfo.JobName = jobName;
-            ScheduledTaskHistoryInfo.ExecutionTime = executedTime;
+            ScheduledTaskHistoryInfo.ExecutedTime = executedTime;
             ScheduledTaskHistoryInfo.ExecutionDuration = duration;
             ScheduledTaskHistoryInfo.CreatedDateTime = DateTime.Now;
-            ScheduledTaskHistoryInfo.RunLog = executedResult;
+            ScheduledTaskHistoryInfo.ExecutedResult = executedResult;
             new ScheduledTaskManager().AddScheduledTaskHistory(ScheduledTaskHistoryInfo);
         }
 
