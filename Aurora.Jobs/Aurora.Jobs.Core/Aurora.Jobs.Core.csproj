@@ -53,6 +53,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Business\enums\WarningType.cs" />
     <Compile Include="Business\enums\JobStatus.cs" />
     <Compile Include="Business\Models\ScheduledTaskModel.cs" />
     <Compile Include="Business\Models\ScheduledTaskHistoryModel.cs" />

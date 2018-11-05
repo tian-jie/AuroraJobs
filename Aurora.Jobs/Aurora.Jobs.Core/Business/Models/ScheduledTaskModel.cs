@@ -79,6 +79,16 @@ namespace Aurora.Jobs.Core.Business.Info
         public bool IsEnabled { get; set; }
 
         /// <summary>
+        /// 报警类型
+        /// </summary>
+        public WarningType WarningType { get; set; }
+
+        /// <summary>
+        /// 报警对象，用|隔开，如A|B|C
+        /// </summary>
+        public String WarningTo { get; set; }
+
+        /// <summary>
         /// 排序
         /// </summary>				
         public int DisplayOrder { get; set; }
