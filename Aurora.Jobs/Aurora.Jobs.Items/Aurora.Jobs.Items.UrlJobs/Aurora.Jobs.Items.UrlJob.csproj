@@ -61,6 +61,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommonService.cs" />
+    <Compile Include="SendMessageModel.cs" />
     <Compile Include="UrlJob.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -90,6 +90,8 @@ namespace Aurora.Jobs.Core
                     IJobDetail job = new JobDetailImpl(task.Id.ToString(), task.Id.ToString() + "Group", type);
                     job.JobDataMap.Add("Parameters", task.JobArgs);
                     job.JobDataMap.Add("JobName", task.Name);
+                    job.JobDataMap.Add("WarningType", task.WarningType);
+                    job.JobDataMap.Add("WarningTo", task.WarningTo);
 
                     CronTriggerImpl trigger = new CronTriggerImpl();
                     trigger.CronExpressionString = task.CronExpression;
@@ -140,7 +142,13 @@ namespace Aurora.Jobs.Core
                     {
                         _logger.Debug($"no jobKey, state={job.Status}");
 
-                        if (job.Status == Business.enums.JobStatus.Idle || job.Status == Business.enums.JobStatus.Running || job.Status == Business.enums.JobStatus.Starting)
+
+                        if (job.Status == Business.enums.JobStatus.Stopping)
+                        {
+                            _logger.Debug("if (job.Status == JobStatus.Stopping), set to JobStatus.Idle");
+                            new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Idle);
+                        }
+                        else
                         {
                             ScheduleJob(scheduler, job);
                             if (!existsJobKey)
@@ -153,11 +161,6 @@ namespace Aurora.Jobs.Core
                                 _logger.Debug("if (existsJobKey), set to JobStatus.Running");
                                 new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Running);
                             }
-                        }
-                        else if (job.Status == Business.enums.JobStatus.Stopping)
-                        {
-                            _logger.Debug("if (job.Status == JobStatus.Stopping), set to JobStatus.Idle");
-                            new ScheduledTaskService().UpdateScheduledTaskState(job.Id, Business.enums.JobStatus.Idle);
                         }
                     }
                     else

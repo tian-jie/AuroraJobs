@@ -65,6 +65,7 @@ namespace Aurora.Jobs.Core
                 executedResult = executedResult + " EX:" + jobException.ToString();
             }
 
+            executedResult = executedResult.Length > 1000 ? executedResult.Substring(0, 1000) : executedResult;
             new ScheduledTaskService().UpdateScheduledTaskStatus(taskId, jobName, fireTimeUtc, nextFireTimeUtc, duration, executedResult);
 
             return Task.FromResult(true);

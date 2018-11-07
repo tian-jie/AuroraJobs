@@ -1,10 +1,10 @@
-﻿using log4net;
+﻿using Aurora.Jobs.Core.Business.enums;
+using log4net;
 using Newtonsoft.Json;
 using Quartz;
 using System;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Aurora.Jobs.Items
@@ -18,8 +18,16 @@ namespace Aurora.Jobs.Items
 
         public async Task Execute(IJobExecutionContext context)
         {
+            var jobName = context.JobDetail.JobDataMap["JobName"] as string;
             Version Ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            _logger.InfoFormat("JobTestA Execute begin Ver." + Ver.ToString());
+
+            var warningMessage = "";
+            bool isWarning = false;
+            var warningType = (WarningType)context.JobDetail.JobDataMap["WarningType"];
+            var warningTo = context.JobDetail.JobDataMap["WarningTo"] as string;
+            var warningContent = "";
+
+            _logger.InfoFormat($"{jobName} Execute begin");
             try
             {
                 var jobParameters = context.JobDetail.JobDataMap["Parameters"].ToString();
@@ -39,7 +47,6 @@ namespace Aurora.Jobs.Items
 
                 var isSuccess = false;
                 // 执行结果（需要考虑，如果不是标准JSON返回值怎么处理）
-                var warningContent = "";
                 try
                 {
                     var notification = JsonConvert.DeserializeObject<Notification>(content);
@@ -49,22 +56,42 @@ namespace Aurora.Jobs.Items
                 catch
                 {
                     // 无法解析json格式的
+                    _logger.Debug($"{jobName} 不是标准返回值，查找关键字作为成功返回值:{JsonConvert.SerializeObject(jobParametersObj)}" );
                     isSuccess = content.Contains(jobParametersObj.SuccessMessageContains);
                     warningContent = content.Substring(0, 100);
                 }
-
-                var isWarning = ArrangeWarning(context.JobDetail.JobDataMap["WarningType"].ToString(), isSuccess, context.JobDetail.Key, warningContent, out warningMessage);
-
+                
+                isWarning = ArrangeWarning(warningType, isSuccess, jobName, warningContent, out warningMessage);
 
                 return;
             }
             catch (Exception ex)
             {
-                _logger.Error("JobTestA 执行过程中发生异常:" + ex.ToString());
+                _logger.Error($"{jobName} 执行过程中发生异常:" + ex.ToString());
+                var innerEx = ex.InnerException;
+                while (innerEx != null)
+                {
+                    _logger.Error(innerEx.Message);
+                    innerEx = innerEx.InnerException;
+                }
+
+                if (warningType != WarningType.None)
+                {
+                    isWarning = true;
+                    warningMessage = $"计划任务执行结果：失败！\r\n\r\n{jobName}\r\n\r\n{warningContent}\r\n\r\nException:\r\n{ex.Message}";
+                }
+
             }
             finally
             {
-                _logger.InfoFormat("JobTestA Execute end ");
+                // 执行完成后根据要求发送提醒消息
+                _logger.Debug($"{jobName} 发报警 isWarning={isWarning},warningTo={warningTo}");
+                if (isWarning && !string.IsNullOrEmpty(warningTo))
+                {
+                    CommonService.SendTextMessage(warningTo, warningMessage);
+                }
+
+                _logger.InfoFormat($"{jobName} Execute end ");
             }
         }
 
