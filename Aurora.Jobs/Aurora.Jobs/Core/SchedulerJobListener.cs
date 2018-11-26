@@ -40,37 +40,29 @@ namespace Aurora.Jobs.Core
                     _logger.Debug($"SchedulerJobListener.JobWasExecuted context.MergedJobDataMap: {context.MergedJobDataMap.Count}");
 
                     jobName = context.MergedJobDataMap.GetString("JobName");
+                    _logger.Debug($"JobWasExecuted, jobName=\"{jobName}\"");
                     executedResult = context.MergedJobDataMap.FirstOrDefault(a => a.Key == "executedResult").Value as string;
-                    //foreach (var item in context.MergedJobDataMap)
-                    //{
-                    //    string key = item.Key;
-                    //    if (key=="executedResult")
-                    //    {
-                    //        if (i > 0)
-                    //        {
-                    //            log.Append(",");
-                    //        }
-                    //        log.Append(item.Value);
-                    //        i++;
-                    //    }
-                    //}
-                    //if (i > 0)
-                    //{
-                    //    executedResult = string.Concat(log.ToString());
-                    //}
 
-                    _logger.Debug($"SchedulerJobListener.JobWasExecuted: {executedResult}");
+                    _logger.Debug($"SchedulerJobListener.JobWasExecuted: {executedResult ?? "null"}");
 
                 }
                 if (jobException != null)
                 {
+                    _logger.Debug($"SchedulerJobListener.JobWasExecuted.jobException: {jobException.ToString()}");
                     executedResult = executedResult + " EX:" + jobException.ToString();
                 }
 
-                executedResult = executedResult.Length > 1000 ? executedResult.Substring(0, 1000) : executedResult;
+                if (!string.IsNullOrEmpty(executedResult))
+                {
+                    executedResult = executedResult.Length > 1000 ? executedResult.Substring(0, 1000) : executedResult;
+                }
+                else
+                {
+                    executedResult = "job执行失败。。。";
+                }
                 new ScheduledTaskService().UpdateScheduledTaskStatus(taskId, jobName, fireTimeUtc, nextFireTimeUtc, duration, executedResult);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Error(ex.Message);
 

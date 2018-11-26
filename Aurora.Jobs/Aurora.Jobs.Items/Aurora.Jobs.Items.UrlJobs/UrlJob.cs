@@ -3,8 +3,11 @@ using log4net;
 using Newtonsoft.Json;
 using Quartz;
 using System;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Aurora.Jobs.Items
@@ -35,15 +38,40 @@ namespace Aurora.Jobs.Items
                 var url = ExtractUrl(jobParametersObj.Url);
 
                 context.MergedJobDataMap.Put("url", url);
-                var httpClient = new HttpClient()
+
+
+                //var httpClient = new HttpClient()
+                //{
+                //    Timeout = new TimeSpan(1, 0, 0)
+                //};
+
+                //var response = await httpClient.GetAsync(url);
+                //var content = await response.Content.ReadAsStringAsync();
+
+
+                var content = "";
+
+                // Create a request for the URL. 		
+                var request = WebRequest.Create(url);
+                request.Timeout = System.Threading.Timeout.Infinite;
+                request.Credentials = CredentialCache.DefaultCredentials;
+                var response = (HttpWebResponse)request.GetResponse();
+                using (var dataStream = response.GetResponseStream())
                 {
-                    Timeout = new TimeSpan(1, 0, 0)
-                };
-                var response = await httpClient.GetAsync(url);
-                var content = await response.Content.ReadAsStringAsync();
+                    using (var reader = new StreamReader(dataStream))
+                    {
+                        // Read the content.
+                        content = reader.ReadToEnd();
+                        // Cleanup the streams and the response.
+                        reader.Close();
+                    }
+                    dataStream.Close();
+                }
+                response.Close();
 
                 context.MergedJobDataMap.Put("executedResult", content);
                 //context.MergedJobDataMap.Put("isSuccess", content);
+                _logger.InfoFormat($"{jobName} Execute finished");
 
                 var isSuccess = false;
                 // 执行结果（需要考虑，如果不是标准JSON返回值怎么处理）
@@ -56,11 +84,11 @@ namespace Aurora.Jobs.Items
                 catch
                 {
                     // 无法解析json格式的
-                    _logger.Debug($"{jobName} 不是标准返回值，查找关键字作为成功返回值:{JsonConvert.SerializeObject(jobParametersObj)}" );
+                    _logger.Debug($"{jobName} 不是标准返回值，查找关键字作为成功返回值:{JsonConvert.SerializeObject(jobParametersObj)}");
                     isSuccess = content.Contains(jobParametersObj.SuccessMessageContains);
                     warningContent = content.Substring(0, 100);
                 }
-                
+
                 isWarning = ArrangeWarning(warningType, isSuccess, jobName, warningContent, out warningMessage);
 
                 return;
@@ -80,6 +108,7 @@ namespace Aurora.Jobs.Items
                     isWarning = true;
                     warningMessage = $"计划任务执行结果：失败！\r\n\r\n{jobName}\r\n\r\n{warningContent}\r\n\r\nException:\r\n{ex.Message}";
                 }
+                context.MergedJobDataMap.Put("executedResult", ex.Message);
 
             }
             finally
