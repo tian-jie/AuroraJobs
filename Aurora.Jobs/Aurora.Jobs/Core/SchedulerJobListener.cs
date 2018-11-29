@@ -61,11 +61,11 @@ namespace Aurora.Jobs.Core
                     executedResult = "job执行失败。。。";
                 }
                 new ScheduledTaskService().UpdateScheduledTaskStatus(taskId, jobName, fireTimeUtc, nextFireTimeUtc, duration, executedResult);
+                _logger.Debug($"SchedulerJobListener.JobWasExecuted: all done");
             }
             catch (Exception ex)
             {
                 _logger.Error(ex.Message);
-
             }
             return Task.FromResult(true);
         }
